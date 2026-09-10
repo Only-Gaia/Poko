@@ -191,8 +191,6 @@ class Moderation(commands.Cog):
     # (saved macros the bot can post on demand - add/remove are locked to
     # the bot's designated owner, config.SPECIAL_USER_ID)
     # ------------------------------------------------------------------
-    message_group = app_commands.Group(name="message", description="Manage and send saved bot messages")
-
     @commands.hybrid_command(name="message", description="Send a saved custom message by name.")
     @app_commands.describe(name="Name of the saved message")
     @commands.has_permissions(manage_messages=True)
