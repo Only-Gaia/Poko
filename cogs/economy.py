@@ -400,12 +400,14 @@ class Economy(commands.Cog):
 
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="cash", description="Check your pokash balance.")
+    @commands.guild_only()
     async def cash(self, ctx: commands.Context):
         user = db.DB.user(ctx.guild.id, ctx.author.id)
         await ctx.send(f"{ctx.author.mention} you have {user['pokash']} {config.CURRENCY_NAME}! {config.CURRENCY_EMOJI}")
 
     @commands.hybrid_command(name="add", description="Add pokash to a member's balance. (restricted)")
     @app_commands.describe(member="Member to give pokash to", amount="Amount to add")
+    @commands.guild_only()
     @utils.is_special_user()
     async def add(self, ctx: commands.Context, member: discord.Member, amount: int):
         if amount <= 0:
@@ -415,6 +417,7 @@ class Economy(commands.Cog):
 
     @commands.hybrid_command(name="remove", description="Remove pokash from a member's balance. (restricted)")
     @app_commands.describe(member="Member to remove pokash from", amount="Amount to remove")
+    @commands.guild_only()
     @utils.is_special_user()
     async def remove(self, ctx: commands.Context, member: discord.Member, amount: int):
         if amount <= 0:
@@ -425,6 +428,7 @@ class Economy(commands.Cog):
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="give", description="Give some of your pokash to another member.")
     @app_commands.describe(member="Member to give pokash to", amount="Amount to give")
+    @commands.guild_only()
     async def give(self, ctx: commands.Context, member: discord.Member, amount: int):
         if member.id == ctx.author.id:
             return await ctx.send(embed=utils.error_embed("You can't give pokash to yourself!"))
@@ -440,6 +444,7 @@ class Economy(commands.Cog):
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="tris", description="Play tic-tac-toe against the bot for pokash.")
     @app_commands.describe(bet="Amount of pokash to bet")
+    @commands.guild_only()
     async def tris(self, ctx: commands.Context, bet: int):
         amount, err = self._get_bet(ctx, bet, ctx.author.id)
         if err:
@@ -456,6 +461,7 @@ class Economy(commands.Cog):
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="mine", description="Play mines: find gems, avoid the 2 mines, cash out anytime.")
     @app_commands.describe(bet="Amount of pokash to bet")
+    @commands.guild_only()
     async def mine(self, ctx: commands.Context, bet: int):
         amount, err = self._get_bet(ctx, bet, ctx.author.id)
         if err:
@@ -473,6 +479,7 @@ class Economy(commands.Cog):
     @commands.hybrid_command(name="coinflip", aliases=["cf"], description="Flip a coin and bet on heads or tails.")
     @app_commands.describe(side="Heads or tails", bet="Amount of pokash to bet")
     @app_commands.choices(side=[app_commands.Choice(name="Heads", value="heads"), app_commands.Choice(name="Tails", value="tails")])
+    @commands.guild_only()
     async def coinflip(self, ctx: commands.Context, side: str, bet: int):
         side = side.lower()
         if side not in ("head", "heads", "tail", "tails"):
@@ -514,6 +521,7 @@ class Economy(commands.Cog):
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="blackjack", description="Play blackjack against the dealer for pokash.")
     @app_commands.describe(bet="Amount of pokash to bet")
+    @commands.guild_only()
     async def blackjack(self, ctx: commands.Context, bet: int):
         amount, err = self._get_bet(ctx, bet, ctx.author.id)
         if err:
@@ -524,6 +532,7 @@ class Economy(commands.Cog):
 
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="lucky", description="Increase your luck by 1 point (max 1000).")
+    @commands.guild_only()
     @commands.cooldown(1, config.LUCKY_COOLDOWN_SECONDS, commands.BucketType.user)
     async def lucky(self, ctx: commands.Context):
         new_luck = db.DB.add_luck(ctx.guild.id, ctx.author.id, 1)
@@ -538,6 +547,7 @@ class Economy(commands.Cog):
 
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="hunt", description="Go hunting for animals!")
+    @commands.guild_only()
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def hunt(self, ctx: commands.Context):
         name, value = _weighted_choice(HUNT_LOOT)
@@ -549,6 +559,7 @@ class Economy(commands.Cog):
         ))
 
     @commands.hybrid_command(name="fish", description="Go fishing!")
+    @commands.guild_only()
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def fish(self, ctx: commands.Context):
         name, value = _weighted_choice(FISH_LOOT)
@@ -570,6 +581,7 @@ class Economy(commands.Cog):
     # ------------------------------------------------------------------
     @commands.hybrid_command(name="inventory", description="See a member's inventory.")
     @app_commands.describe(member="Member to check (default: yourself)")
+    @commands.guild_only()
     async def inventory(self, ctx: commands.Context, member: discord.Member = None):
         member = member or ctx.author
         user = db.DB.user(ctx.guild.id, member.id)
@@ -594,7 +606,9 @@ class Economy(commands.Cog):
 
     # ------------------------------------------------------------------
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, commands.CheckFailure):
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.send(embed=utils.error_embed("This command can only be used in a server, not in DMs."))
+        elif isinstance(error, commands.CheckFailure):
             await ctx.send(embed=utils.error_embed(str(error) or "You can't use this command."))
         elif isinstance(error, commands.MemberNotFound):
             await ctx.send(embed=utils.error_embed("I couldn't find that member."))
